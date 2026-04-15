@@ -28,6 +28,19 @@ function getNameEl(target) {
 	return seatEl?.querySelector("h3") ?? null;
 }
 
+function getSpeechBubbleEl(target) {
+    const seatEl = getSeatEl(target);
+    return seatEl?.querySelector(".speech-bubble") ?? null;
+}
+
+function cancelSpeechBubbleTimer(target) {
+    if (!target?.speechBubbleTimer) {
+        return;
+    }
+    clearTimeout(target.speechBubbleTimer);
+    target.speechBubbleTimer = null;
+}
+
 function getWinnerReactionEl(target) {
 	return target?.winnerReactionEl ?? null;
 }
@@ -314,6 +327,43 @@ export function showWinnerReaction(target, emoji = "", visibleUntil = 0) {
 	}, remainingDuration);
 }
 
+export function clearSpeechBubble(target) {
+    const bubbleEl = getSpeechBubbleEl(target);
+    cancelSpeechBubbleTimer(target);
+    if (!bubbleEl) {
+        return;
+    }
+    bubbleEl.textContent = "";
+    bubbleEl.classList.add("hidden");
+    if (typeof target.clearSpeechBubbleState === "function") {
+        target.clearSpeechBubbleState();
+    }
+}
+
+export function showSpeechBubble(target, text = "", visibleUntil = 0) {
+    const bubbleEl = getSpeechBubbleEl(target);
+    cancelSpeechBubbleTimer(target);
+    if (!bubbleEl || !text) {
+        clearSpeechBubble(target);
+        return;
+    }
+
+    const remainingDuration = Number.isFinite(visibleUntil)
+        ? Math.max(0, visibleUntil - Date.now())
+        : 0;
+    if (remainingDuration === 0) {
+        clearSpeechBubble(target);
+        return;
+    }
+
+    bubbleEl.textContent = text;
+    bubbleEl.classList.remove("hidden");
+    
+    target.speechBubbleTimer = setTimeout(() => {
+        clearSpeechBubble(target);
+    }, remainingDuration);
+}
+
 export function renderNotificationBar(container, messages = [], fallbackText = "") {
 	if (!container) {
 		return;
@@ -502,6 +552,7 @@ export function renderChipTransferAnimation(
 export function clearRenderedSeat(seatRef) {
 	clearSeatActionLabel(seatRef, "");
 	clearWinnerReaction(seatRef);
+	clearSpeechBubble(seatRef); // ADD THIS LINE
 	renderSeatWinnerState(seatRef, false);
 	seatRef.seatEl.classList.add("hidden");
 	seatRef.seatEl.classList.remove(
@@ -553,6 +604,13 @@ export function renderHostSeat(seatRef, seatState = {}) {
 	} else {
 		clearWinnerReaction(seatRef);
 	}
+
+	// ADD THIS BLOCK
+    if (seatState.chatMessage?.text) {
+        showSpeechBubble(seatRef, seatState.chatMessage.text, seatState.chatMessage.visibleUntil);
+    } else {
+        clearSpeechBubble(seatRef);
+    }
 }
 
 export function renderProjectedSeat(
@@ -590,4 +648,10 @@ export function renderProjectedSeat(
 			: "",
 		showWinProbability,
 	);
+	// ADD THIS BLOCK
+    if (publicSeat.chatMessage?.text) {
+        showSpeechBubble(seatRef, publicSeat.chatMessage.text, publicSeat.chatMessage.visibleUntil);
+    } else {
+        clearSpeechBubble(seatRef);
+    }
 }

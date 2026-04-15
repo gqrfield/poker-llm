@@ -2923,3 +2923,59 @@ export function chooseBotAction(player, gameState) {
 
 	return decision;
 }
+
+/* ===========================
+   LLM Bot Dialogue Integration
+========================== */
+export async function fetchBotDialogue(player, gameState, decision) {
+    if (!player || !decision) {
+        return "";
+    }
+
+    const actionText = decision.action.toUpperCase();
+    if (actionText === "FOLD" || actionText === "CHECK") {
+        return ""; // Only talk when making aggressive or calling moves to keep game fast
+    }
+
+    const { communityCards, pot } = gameState;
+    const holeCards = player.holeCards.map(formatCard).join(" ");
+    const board = communityCards.length > 0 ? communityCards.map(formatCard).join(" ") : "Preflop";
+    
+    const prompt = `You are playing Texas Hold'em poker. You are manipulative, slightly rude, and bluff a lot. 
+Your Hole Cards: ${holeCards}
+Community Cards: ${board}
+Pot: ${pot} chips.
+You decided to: ${actionText}.
+Write a short, 1-sentence thing to say to the table as you make this move. Do not use quotes. Keep it under 10 words.`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+
+    try {
+        const response = await fetch("http://127.0.0.1:11434/api/generate", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                model: "llama3", // Change to your local model name
+                prompt: prompt,
+                stream: false
+            }),
+            signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            return "";
+        }
+
+        const data = await response.json();
+        return data.response ? data.response.trim().replace(/^"|"$/g, "") : "";
+    } catch (error) {
+        // Fails silently if LLM is off or times out, allowing game to continue
+        console.warn("Local LLM fetch failed or timed out.");
+        return "";
+    }
+}

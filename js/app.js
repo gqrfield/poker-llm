@@ -22,6 +22,7 @@ import {
 	chooseBotAction,
 	enqueueBotAction,
 	setBotPlaybackFast,
+	fetchBotDialogue
 } from "./bot.js";
 import {
 	calculateWinProbabilities,
@@ -475,6 +476,7 @@ function buildPlayerSeatState(
 		winProbabilityLabel,
 		actionState: publicPlayerView.actionState,
 		winnerReaction: publicPlayerView.winnerReaction,
+		chatMessage: player.chatMessage,
 	};
 }
 
@@ -1237,9 +1239,21 @@ async function fetchPendingRemoteAction(turnToken) {
 }
 
 async function sendTableState() {
+	const view = buildSyncView(gameState, notifArr.slice(0, MAX_ITEMS));
+	
+	// Inject chat messages into the sync payload for remote clients
+	if (view && Array.isArray(view.seatViews)) {
+		view.seatViews.forEach(seatView => {
+			const player = gameState.players.find(p => p.seatIndex === seatView.seatIndex);
+			if (player && player.chatMessage) {
+				seatView.chatMessage = player.chatMessage;
+			}
+		});
+	}
+
 	const payload = {
 		tableId: tableId,
-		view: buildSyncView(gameState, notifArr.slice(0, MAX_ITEMS)),
+		view: view,
 	};
 
 	try {
@@ -1800,6 +1814,7 @@ function preFlop() {
 		p.totalBet = 0;
 		p.winProbability = null;
 		p.isWinner = false;
+		p.chatMessage = null;
 		clearPlayerWinnerReaction(p);
 		renderPlayerWinnerState(p, false);
 		removePlayerSeatClasses(
@@ -2264,9 +2279,19 @@ function runBotTurn({ player, cycles, anyUncalled, nextPlayer }) {
 	clearPlayerActionLabel(player);
 	removePlayerSeatClasses(player, "checked", "called", "raised", "allin");
 	setPlayerSeatName(player, "thinking …");
+	player.chatMessage = null;
 
-	enqueueBotAction(() => {
+	enqueueBotAction(async () => {
 		const decision = chooseBotAction(player, gameState);
+		
+		const chatText = await fetchBotDialogue(player, gameState, decision);
+		if (chatText) {
+			player.chatMessage = {
+				text: chatText,
+				visibleUntil: Date.now() + 5000 // Bubble stays up for 5 seconds
+			};
+		}
+
 		const actionRequest = normalizeBotActionRequest(player, decision);
 		let resolvedAction = applyTurnAction(player, actionRequest);
 		if (!resolvedAction) {

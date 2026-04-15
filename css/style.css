@@ -1138,3 +1138,40 @@ MEDIA QUERIES
         min-width: 56px;
     }
 }
+/* --- Bot Speech Bubble --- */
+.speech-bubble {
+    position: absolute;
+    top: -60px;
+    left: 50%;
+    transform: translateX(-50%) scale(1);
+    background: rgba(255, 255, 255, 0.95);
+    color: #111;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    white-space: nowrap;
+    z-index: 100;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    opacity: 1;
+}
+
+/* Little triangle pointing to the avatar */
+.speech-bubble::after {
+    content: "";
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px 6px 0;
+    border-style: solid;
+    border-color: rgba(255, 255, 255, 0.95) transparent transparent transparent;
+}
+
+.speech-bubble.hidden {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.9);
+}
