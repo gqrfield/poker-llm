@@ -341,10 +341,11 @@ export function clearSpeechBubble(target) {
 }
 
 export function showSpeechBubble(target, text = "", visibleUntil = 0) {
+    console.log("Speech Bubble Triggered for:", target.nameEl?.textContent, "Text:", text); // ADD THIS
     const bubbleEl = getSpeechBubbleEl(target);
-    cancelSpeechBubbleTimer(target);
-    if (!bubbleEl || !text) {
-        clearSpeechBubble(target);
+    
+    if (!bubbleEl) {
+        console.error("COULD NOT FIND BUBBLE ELEMENT IN DOM FOR SEAT!"); // ADD THIS
         return;
     }
 

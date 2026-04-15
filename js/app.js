@@ -2284,15 +2284,37 @@ function runBotTurn({ player, cycles, anyUncalled, nextPlayer }) {
 	enqueueBotAction(async () => {
 		const decision = chooseBotAction(player, gameState);
 		
+		// 1. Get the dialogue
 		const chatText = await fetchBotDialogue(player, gameState, decision);
+		
 		if (chatText) {
 			player.chatMessage = {
 				text: chatText,
-				visibleUntil: Date.now() + 5000 // Bubble stays up for 5 seconds
+				visibleUntil: Date.now() + 5000 
 			};
+			// 2. FORCE UI UPDATE IMMEDIATELY to show the bubble
+			renderPlayerSeat(player); 
+			queueStateSync(0); // Sync to other players/phones
 		}
 
 		const actionRequest = normalizeBotActionRequest(player, decision);
+		
+		// ADD THIS SAFETY CHECK:
+		if (actionRequest && actionRequest.action === "raise") {
+			const amount = parseInt(actionRequest.amount, 10);
+			if (isNaN(amount) || amount <= 0) {
+				console.warn("Bot tried to raise invalid amount:", actionRequest.amount, "Falling back to Call.");
+				actionRequest.action = "call";
+				actionRequest.amount = gameState.currentBet - player.roundBet;
+			}
+		}
+
+		// 3. Robustness check: Ensure raising doesn't break the game
+		if (actionRequest.action === "raise" && (!actionRequest.amount || isNaN(actionRequest.amount))) {
+			console.warn("Bot tried to raise an invalid amount. Falling back to Call.");
+			actionRequest.action = "call";
+		}
+
 		let resolvedAction = applyTurnAction(player, actionRequest);
 		if (!resolvedAction) {
 			logFlow("bot action fallback", {
@@ -2882,7 +2904,7 @@ poker.init();
  * - SERVICE_WORKER_VERSION: bump to force new SW and new cache
  * - AUTO_RELOAD_ON_SW_UPDATE: reload page once after an update
  -------------------------------------------------------------------------------------------------- */
-const USE_SERVICE_WORKER = true;
+const USE_SERVICE_WORKER = false;
 const SERVICE_WORKER_VERSION = "2026-04-14-v3";
 const AUTO_RELOAD_ON_SW_UPDATE = true;
 

@@ -187,13 +187,16 @@ export function enqueueBotAction(fn) {
 }
 
 // Execute queued actions at fixed intervals
-function processBotQueue() {
+async function processBotQueue() {
 	if (botActionQueue.length === 0) {
 		processingBotActions = false;
 		return;
 	}
 	const fn = botActionQueue.shift();
-	fn();
+	
+	// Use await here so the queue stops until the bot's async turn (LLM + Action) is done
+	await fn(); 
+	
 	if (botActionQueue.length > 0) {
 		scheduleBotQueue();
 	} else {
