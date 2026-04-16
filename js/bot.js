@@ -2976,7 +2976,10 @@ Write a short, 1-sentence table-talk remark. Do not use quotes. Keep it under 10
     try {
         const response = await fetch("https://gladiator-crudely-unthread.ngrok-free.dev/api/generate", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true" // <--- ADD THIS LINE
+            },
             body: JSON.stringify({
                 model: "llama3:latest",
                 prompt: prompt,
