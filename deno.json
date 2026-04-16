@@ -1,4 +1,9 @@
 {
+	"compilerOptions": {
+    "allowJs": true,
+    "lib": ["deno.window", "deno.unstable"]
+  	},
+  	"unstable": ["kv"],
 	"fmt": {
 		"useTabs": true,
 		"indentWidth": 4,
@@ -18,5 +23,10 @@
 				"recommended"
 			]
 		}
+	},
+	"deploy": {
+		"org": "gqrfield",
+		"app": "pokerllm"
 	}
 }
+
