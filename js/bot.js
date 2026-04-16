@@ -2974,19 +2974,19 @@ Write a short, 1-sentence table-talk remark. Do not use quotes. Keep it under 10
     const timeoutId = setTimeout(() => controller.abort(), 2000);
 
     try {
-        const response = await fetch("https://gladiator-crudely-unthread.ngrok-free.dev/api/generate", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "ngrok-skip-browser-warning": "true" // <--- ADD THIS LINE
-            },
-            body: JSON.stringify({
-                model: "llama3:latest",
-                prompt: prompt,
-                stream: false
-            }),
-            signal: controller.signal
-        });
+        const response = await fetch("https://gladiator-crudely-unthread.ngrok-free.dev/api/generate?ngrok-skip-browser-warning=1", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+				// The ngrok-skip-browser-warning header has been REMOVED from here
+			},
+			body: JSON.stringify({
+				model: "llama3:latest",
+				prompt: prompt,
+				stream: false
+			}),
+    		signal: controller.signal
+		});
 
         clearTimeout(timeoutId);
         if (!response.ok) return "";
