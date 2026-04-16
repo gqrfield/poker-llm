@@ -2284,7 +2284,7 @@ function runBotTurn({ player, cycles, anyUncalled, nextPlayer }) {
 	enqueueBotAction(async () => {
 		const decision = chooseBotAction(player, gameState);
 		
-		// 1. Get the dialogue
+		// Fetch dialogue based on new Fold/Call rules
 		const chatText = await fetchBotDialogue(player, gameState, decision);
 		
 		if (chatText) {
@@ -2292,12 +2292,13 @@ function runBotTurn({ player, cycles, anyUncalled, nextPlayer }) {
 				text: chatText,
 				visibleUntil: Date.now() + 5000 
 			};
-			// 2. FORCE UI UPDATE IMMEDIATELY to show the bubble
 			renderPlayerSeat(player); 
-			queueStateSync(0); // Sync to other players/phones
+			queueStateSync(0);
 		}
 
+		// Apply the action after the text is set
 		const actionRequest = normalizeBotActionRequest(player, decision);
+		applyTurnAction(player, actionRequest);
 		
 		// ADD THIS SAFETY CHECK:
 		if (actionRequest && actionRequest.action === "raise") {

@@ -2931,37 +2931,54 @@ export function chooseBotAction(player, gameState) {
    LLM Bot Dialogue Integration
 ========================== */
 export async function fetchBotDialogue(player, gameState, decision) {
-    if (!player || !decision) {
-        return "";
-    }
+    if (!player || !decision) return "";
 
     const actionText = decision.action.toUpperCase();
-    if (actionText === "FOLD" || actionText === "CHECK") {
-        return ""; // Only talk when making aggressive or calling moves to keep game fast
+    const isPreFlop = !gameState.communityCards || gameState.communityCards.length === 0;
+    
+    // --- Rule 1: Always silent on Checks ---
+    if (actionText === "CHECK") return "";
+
+    // --- Rule 2: Conditional on Calls ---
+    // Only talk if calling a "Raise" (Bet > Big Blind pre-flop, or Bet > 0 post-flop)
+    if (actionText === "CALL") {
+        const hasAggression = isPreFlop 
+            ? gameState.currentBet > gameState.bigBlind 
+            : gameState.currentBet > 0;
+        
+        if (!hasAggression) return "";
     }
+
+    // --- Rule 3: Folds and Raises always proceed to LLM ---
 
     const { communityCards, pot } = gameState;
     const holeCards = player.holeCards.map(formatCard).join(" ");
-    const board = communityCards.length > 0 ? communityCards.map(formatCard).join(" ") : "Preflop";
+    const board = communityCards.length > 0 ? communityCards.map(formatCard).join(" ") : "Pre-flop";
     
-    const prompt = `You are playing Texas Hold'em poker. You are manipulative, slightly rude, and bluff a lot. 
+    // Contextualize the personality based on the move
+    let tone = "manipulative and arrogant";
+    if (actionText === "FOLD") {
+        tone = "salty, sarcastic, and dismissive, acting like the other players aren't worth the time";
+    } else if (actionText === "CALL") {
+        tone = "suspicious and tactical, acting like you're slow-playing a monster hand";
+    }
+
+    const prompt = `You are playing Texas Hold'em. You are ${tone}.
 Your Hole Cards: ${holeCards}
 Community Cards: ${board}
 Pot: ${pot} chips.
-You decided to: ${actionText}.
-Write a short, 1-sentence thing to say to the table as you make this move. Do not use quotes. Keep it under 10 words.`;
+Current Move: ${actionText}.
+Write a short, 1-sentence table-talk remark. Do not use quotes. Keep it under 10 words.`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
 
     try {
         const response = await fetch("http://127.0.0.1:11434/api/generate", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                model: "llama3", // Change to your local model name
+                model: "llama3:latest",
                 prompt: prompt,
                 stream: false
             }),
@@ -2969,16 +2986,11 @@ Write a short, 1-sentence thing to say to the table as you make this move. Do no
         });
 
         clearTimeout(timeoutId);
-
-        if (!response.ok) {
-            return "";
-        }
+        if (!response.ok) return "";
 
         const data = await response.json();
         return data.response ? data.response.trim().replace(/^"|"$/g, "") : "";
     } catch (error) {
-        // Fails silently if LLM is off or times out, allowing game to continue
-        console.warn("Local LLM fetch failed or timed out.");
         return "";
     }
 }

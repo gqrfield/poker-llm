@@ -1139,42 +1139,62 @@ MEDIA QUERIES
         min-width: 56px;
     }
 }
-/* --- Bot Speech Bubble --- */
+/* --- Refined Bot Speech Bubble --- */
 .speech-bubble {
     position: absolute;
-    top: -60px;
+    top: -75px; 
     left: 50%;
     transform: translateX(-50%) scale(1);
-    background: rgba(255, 255, 255, 0.95);
-    color: #111;
-    padding: 8px 12px;
-    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.98);
+    color: #222;
+    padding: 12px 16px;
+    border-radius: 16px;
     font-size: 14px;
-    font-weight: bold;
+    font-weight: 600;
+    line-height: 1.4;
     text-align: center;
-    white-space: nowrap;
-    z-index: 100;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    
+    /* FIX: Flexible sizing and forced wrapping */
+    width: 180px;           /* Wider bubble */
+    max-width: 220px;       /* Don't let it get crazy big */
+    min-height: 40px;       /* Ensure it looks like a bubble even with short text */
+    white-space: normal !important; /* FORCES text to wrap onto multiple lines */
+    word-wrap: break-word;  /* Ensures long words don't break the layout */
+    
+    z-index: 1000;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(0, 0, 0, 0.1);
     pointer-events: none;
     transition: opacity 0.2s ease, transform 0.2s ease;
-    opacity: 1;
+    display: flex;          /* Centers text vertically if needed */
+    align-items: center;
+    justify-content: center;
 }
 
-/* Little triangle pointing to the avatar */
-.speech-bubble {
+/* Default Triangle (Points Down) */
+.speech-bubble::after {
+    content: "";
     position: absolute;
-    /* Change from -60px to 20px to move it DOWN inside the avatar area */
-    top: 20px; 
+    bottom: -10px;
     left: 50%;
     transform: translateX(-50%);
-    background: #ff0000; /* Bright red so we can't miss it */
-    color: white;
-    padding: 10px;
-    border-radius: 8px;
-    z-index: 9999; /* Ensure it's on top of everything */
-    font-weight: bold;
-    white-space: normal; /* Allow text to wrap */
-    width: 100px;
+    border-width: 10px 10px 0;
+    border-style: solid;
+    border-color: rgba(255, 255, 255, 0.98) transparent transparent transparent;
+}
+
+/* --- Smart Flip for Top Row Seats --- */
+/* This moves the bubble BELOW the player so it doesn't go off the top of the browser */
+.seat.top-row .speech-bubble {
+    top: auto;
+    bottom: -85px; 
+}
+
+.seat.top-row .speech-bubble::after {
+    bottom: auto;
+    top: -10px; 
+    border-width: 0 10px 10px;
+    border-color: transparent transparent rgba(255, 255, 255, 0.98) transparent;
 }
 
 .speech-bubble.hidden {
