@@ -2974,7 +2974,7 @@ Write a short, 1-sentence table-talk remark. Do not use quotes. Keep it under 10
     const timeoutId = setTimeout(() => controller.abort(), 2000);
 
     try {
-        const response = await fetch("http://127.0.0.1:11434/api/generate", {
+        const response = await fetch("https://gladiator-crudely-unthread.ngrok-free.dev/api/generate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
