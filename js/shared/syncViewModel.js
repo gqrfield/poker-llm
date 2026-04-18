@@ -158,6 +158,7 @@ export function buildPublicPlayerView(player, communityCards, gameState, now = D
 		winner: player.isWinner === true,
 		actionState: getLivePlayerActionState(player.actionState, now),
 		winnerReaction: getLivePlayerWinnerReactionState(player, now),
+		chatMessage: player.chatMessage, // <--- ADD THIS LINE HERE
 	};
 }
 
