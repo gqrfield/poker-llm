@@ -2971,7 +2971,7 @@ Current Move: ${actionText}.
 Write a short, 1-sentence table-talk remark. Do not use quotes. Keep it under 10 words.`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
 
     try {
         const response = await fetch("https://gladiator-crudely-unthread.ngrok-free.dev/api/generate?ngrok-skip-browser-warning=1", {
