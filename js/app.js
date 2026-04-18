@@ -2274,79 +2274,60 @@ function normalizeBotActionRequest(player, decision) {
 }
 
 function runBotTurn({ player, cycles, anyUncalled, nextPlayer }) {
-	setActiveTurnPlayer(player);
-	humanTurnController.hide();
-	clearPlayerActionLabel(player);
-	removePlayerSeatClasses(player, "checked", "called", "raised", "allin");
-	setPlayerSeatName(player, "thinking …");
-	player.chatMessage = null;
+    setActiveTurnPlayer(player);
+    humanTurnController.hide();
+    clearPlayerActionLabel(player);
+    removePlayerSeatClasses(player, "checked", "called", "raised", "allin");
+    
+    // We removed "Thinking..." from setPlayerSeatName to avoid double-think
+    // setPlayerSeatName(player, "thinking …"); 
 
-	enqueueBotAction(async () => {
-		player.chatMessage = {
-			text: "thinking...",
-			visibleUntil: Date.now() + 15000 
-		};
-		renderPlayerSeat(player);
-		queueStateSync(0);
+    enqueueBotAction(async () => {
+        // ... (your existing bubble setup code is here) ...
 
-		const decision = chooseBotAction(player, gameState);
-		const chatText = await fetchBotDialogue(player, gameState, decision);
-		
-		if (chatText) {
-			player.chatMessage = {
-				text: chatText,
-				visibleUntil: Date.now() + 6000 
-			};
-		} else {
-            // IF THE LLM FAILS: Clear the "thinking..." bubble immediately
-			player.chatMessage = null; 
-		}
+        const decision = chooseBotAction(player, gameState);
+        const chatText = await fetchBotDialogue(player, gameState, decision);
+        
+        if (chatText) {
+            player.chatMessage = {
+                text: chatText,
+                visibleUntil: Date.now() + 6000 
+            };
+        } else {
+            player.chatMessage = null; 
+        }
 
+        const actionRequest = normalizeBotActionRequest(player, decision);
+        let resolvedAction = applyTurnAction(player, actionRequest);
+        
+        // --- PLACE THE SAFETY CHECK AND FINAL RENDER HERE ---
+        if (!resolvedAction) {
+            logFlow("bot action fallback", {
+                name: player.name,
+                decision: decision?.action ?? null,
+            });
+            const fallbackActionState = getPlayerActionState(gameState, player);
+            resolvedAction = applyTurnAction(
+                player,
+                fallbackActionState.canCheck
+                    ? { action: "check" }
+                    : { action: "fold" },
+            );
+        }
+
+        // Final UI refresh to show the move (yellow label) and bubble text together
         renderPlayerSeat(player); 
         queueStateSync(0);
 
-		const actionRequest = normalizeBotActionRequest(player, decision);
-		applyTurnAction(player, actionRequest);
-		
-		// ADD THIS SAFETY CHECK:
-		if (actionRequest && actionRequest.action === "raise") {
-			const amount = parseInt(actionRequest.amount, 10);
-			if (isNaN(amount) || amount <= 0) {
-				console.warn("Bot tried to raise invalid amount:", actionRequest.amount, "Falling back to Call.");
-				actionRequest.action = "call";
-				actionRequest.amount = gameState.currentBet - player.roundBet;
-			}
-		}
-
-		// 3. Robustness check: Ensure raising doesn't break the game
-		if (actionRequest.action === "raise" && (!actionRequest.amount || isNaN(actionRequest.amount))) {
-			console.warn("Bot tried to raise an invalid amount. Falling back to Call.");
-			actionRequest.action = "call";
-		}
-
-		let resolvedAction = applyTurnAction(player, actionRequest);
-		if (!resolvedAction) {
-			logFlow("bot action fallback", {
-				name: player.name,
-				decision: decision?.action ?? null,
-			});
-			const fallbackActionState = getPlayerActionState(gameState, player);
-			resolvedAction = applyTurnAction(
-				player,
-				fallbackActionState.canCheck
-					? { action: "check" }
-					: { action: "fold" },
-			);
-		}
-		continueAfterResolvedTurn({
-			player,
-			cycles,
-			anyUncalled,
-			nextPlayer,
-			logPrefix: "bot",
-			advanceReason: "bot",
-		});
-	});
+        continueAfterResolvedTurn({
+            player,
+            cycles,
+            anyUncalled,
+            nextPlayer,
+            logPrefix: "bot",
+            advanceReason: "bot",
+        });
+    });
 }
 
 function startBettingRound() {
