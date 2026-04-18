@@ -58,21 +58,22 @@ const amountIncrementButton = document.getElementById("amount-increment-button")
 const sliderOutput = document.querySelector("output");
 const remoteSwitchLink = document.getElementById("remote-switch-link");
 const seatRefs = Array.from(document.querySelectorAll(".seat")).map((seatEl, seatSlot) => ({
-	seatSlot,
-	seatEl,
-	cardEls: seatEl.querySelectorAll(".card"),
-	nameEl: seatEl.querySelector("h3"),
-	totalEl: seatEl.querySelector(".chips .total"),
-	betEl: seatEl.querySelector(".chips .bet"),
-	stackChipEls: seatEl.querySelectorAll(".stack-visual img"),
-	dealerEl: seatEl.querySelector(".dealer"),
-	smallBlindEl: seatEl.querySelector(".small-blind"),
-	bigBlindEl: seatEl.querySelector(".big-blind"),
-	winProbabilityEl: seatEl.querySelector(".win-probability"),
-	handStrengthEl: seatEl.querySelector(".hand-strength"),
-	actionLabelTimer: null,
-	winnerReactionEl: seatEl.querySelector(".winner-reaction"),
-	winnerReactionTimer: null,
+    seatSlot,
+    seatEl,
+    cardEls: seatEl.querySelectorAll(".card"),
+    nameEl: seatEl.querySelector("h3"),
+    totalEl: seatEl.querySelector(".chips .total"),
+    betEl: seatEl.querySelector(".chips .bet"),
+    stackChipEls: seatEl.querySelectorAll(".stack-visual img"),
+    dealerEl: seatEl.querySelector(".dealer"),
+    smallBlindEl: seatEl.querySelector(".small-blind"),
+    bigBlindEl: seatEl.querySelector(".big-blind"),
+    winProbabilityEl: seatEl.querySelector(".win-probability"),
+    handStrengthEl: seatEl.querySelector(".hand-strength"),
+    actionLabelTimer: null,
+    winnerReactionEl: seatEl.querySelector(".winner-reaction"),
+    winnerReactionTimer: null,
+    speechBubbleEl: seatEl.querySelector(".speech-bubble"), // <-- ADD THIS LINE
 }));
 const urlParams = new URLSearchParams(globalThis.location.search);
 const tableId = urlParams.get("tableId") || "";
@@ -183,6 +184,16 @@ function applyRemoteState(payload) {
 			actionName: publicSeat.actionState?.name,
 			labelUntil: publicSeat.actionState?.labelUntil,
 		});
+		// --- UPDATE SPEECH BUBBLES ---
+        if (seatRef.speechBubbleEl) {
+            const chat = publicSeat.chatMessage;
+            if (chat && chat.text && chat.visibleUntil > Date.now()) {
+                seatRef.speechBubbleEl.textContent = chat.text;
+                seatRef.speechBubbleEl.classList.remove("hidden");
+            } else {
+                seatRef.speechBubbleEl.classList.add("hidden");
+            }
+        }
 		if (publicSeat.winnerReaction?.emoji) {
 			showWinnerReaction(
 				seatRef,

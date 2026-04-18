@@ -2282,18 +2282,26 @@ function runBotTurn({ player, cycles, anyUncalled, nextPlayer }) {
 	player.chatMessage = null;
 
 	enqueueBotAction(async () => {
-		const decision = chooseBotAction(player, gameState);
 		
-		// Fetch dialogue based on new Fold/Call rules
+        // 1. Tell the local table AND the server that we are thinking
+        player.chatMessage = {
+            text: "thinking...",
+            visibleUntil: Date.now() + 15000 // Stays until overwritten
+        };
+        renderPlayerSeat(player);
+        queueStateSync(0); // <-- CRITICAL: This pushes "thinking..." to the phones!
+
+		const decision = chooseBotAction(player, gameState);
 		const chatText = await fetchBotDialogue(player, gameState, decision);
 		
+        // 2. Overwrite with the actual LLM response
 		if (chatText) {
 			player.chatMessage = {
 				text: chatText,
-				visibleUntil: Date.now() + 5000 
+				visibleUntil: Date.now() + 6000 
 			};
 			renderPlayerSeat(player); 
-			queueStateSync(0);
+			queueStateSync(0); // Syncs the final text
 		}
 
 		// Apply the action after the text is set
